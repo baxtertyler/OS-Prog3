@@ -60,6 +60,7 @@ def main():
         offset = current[1]
 
         if page in tlb:
+            print("TLB HIT\n")
             frame = tlb[page]
             referencedByteValue = physicalMemory[frame * 256 + offset]
             numTLBHits += 1
@@ -69,6 +70,7 @@ def main():
             if page in pageTable and pageTable[page][1] == 1:  # Page is in page table and present
                 frame = pageTable[page][0]
                 referencedByteValue = physicalMemory[frame * 256 + offset]
+                print("Page Table Hit\n")
             else:
                 numPageFaults += 1
 
@@ -78,10 +80,8 @@ def main():
                     frame = physicalMemory.index(None) // 256
                 else: # Memory is full, must use a PRA!
                     if PRA == "FIFO":
-                        evictedPage = next(iter(pageTable))
-                        evictedFrame = pageTable[evictedPage][0]
-                        frame = evictedFrame
-                        pageTable[evictedPage] = (evictedFrame, 0)
+                        # Find the oldest page in memory
+                        pass
                     elif PRA == "LRU":
                         pass   
                     elif PRA == "OPT":
