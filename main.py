@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-# helper functions
+# Helper functions
 
 def processInput(filename):
     file = open(filename, "r")
@@ -10,42 +10,44 @@ def processInput(filename):
     return lines
 
 def parseAddress(address):
-    offset = address & 255 # 255 is 0000000011111111 in binary
+    offset = address & 255  # 255 is 0000000011111111 in binary
     page = (address >> 8) & 255
     return (page, offset)
 
 def getPageFromBackingStore(page):
-    with open("BACKING_STORE.bin", "rb") as f:
-        f.seek(page * 256)
-        pageData = f.read(256)
-    return list(pageData)
+    file = open("BACKING_STORE.bin", "rb")
+    file.seek(page * 256)
+    return list(file.read(256))
+    
 
 
-# main program
+# Main program
 
 def main():
-    # what we are trying to get
+    # Variables we're trying to track
     referencedByteValue = -1
     frame = -1
     numPageFaults = 0
     numTLBMisses = 0
+    numTLBHits = 0
     numAccesses = 0
 
-    FRAMES = 256 
+    FRAMES = 10  # Total frames in physical memory
+    PRA = "FIFO"  # Page replacement algorithm
 
     # TLB
     # [page # -> page frame #]
-    # max size: 16
-    tlb = OrderedDict() 
+    # Max size: 16
+    tlb = OrderedDict()
 
-    # Page Talbe
+    # Page Table
     # [page # -> (page frame #, present bit)]
-    # max size: 256
-    pageTable = OrderedDict() 
+    # Max size: 256
+    pageTable = OrderedDict()
 
     # Physical Memory
-    # constant size: 256 * FRAMES
-    physicalMemory = [None] * FRAMES * 256
+    # Constant size: 256 * FRAMES
+    physicalMemory = [None] * FRAMES * 256  # Each entry is 256 bytes
 
     input = processInput("input.txt")
     for fullAddress in input:
@@ -57,31 +59,59 @@ def main():
         if page in tlb:
             frame = tlb[page]
             referencedByteValue = physicalMemory[frame * 256 + offset]
+            numTLBHits += 1
         else:
             numTLBMisses += 1
 
-            if page in pageTable and pageTable[page][1] == 1: # page is in page table and present bit is yes 
+            if page in pageTable and pageTable[page][1] == 1:  # Page is in page table and present
                 frame = pageTable[page][0]
                 referencedByteValue = physicalMemory[frame * 256 + offset]
-            else: 
+            else:
                 numPageFaults += 1
 
-                # find the page in the backing store
-                _page = getPageFromBackingStore(page)
+                pageData = getPageFromBackingStore(page)
 
-                # update the page table and physical memory
+                if None in physicalMemory: # Memory is not full!
+                    frame = physicalMemory.index(None) // 256
+                else: 
+                    if PRA == "FIFO":
+                        evictedPage = next(iter(pageTable))
+                        evictedFrame = pageTable[evictedPage][0]
+                        frame = evictedFrame
+                        pageTable[evictedPage] = (evictedFrame, 0)
+                    elif PRA == "LRU":
+                        pass   
+                    elif PRA == "OPT":
+                        pass
 
-                # update TLB
+                # Load the page into physical memory
+                startAddress = frame * 256
+                endAddress = startAddress + 256
+                physicalMemory[startAddress:endAddress] = pageData
+
+                # Update TLB
                 tlb[page] = frame
-                if len(tlb) >= 16:
+                if len(tlb) > 16:
                     tlb.popitem(last=False)
 
-                # update page table
-                if len(pageTable) >= 256:
-                    pageTable.popitem(last=False)
+                # Update Page Table
                 pageTable[page] = (frame, 1)
 
-        print(fullAddress, referencedByteValue, frame, )
+                referencedByteValue = physicalMemory[frame * 256 + offset]
+
+        # Print the output for each address
+        print(f"{fullAddress}, {referencedByteValue}, {frame}, ")
+        print("".join([f"{x:02x}" for x in physicalMemory[frame * 256:frame * 256 + 256]])) # converts from binary to hex (got this from chat)
+
+    # these might be slightly wrong
+    print("Number of Translated Addresses =", numAccesses)
+    print("Page Faults =", numPageFaults)
+    print("Page Fault Rate =", numPageFaults / numAccesses * 100)
+    print("TLB Hits =", numTLBHits)
+    print("TLB Misses =", numTLBMisses)
+    print("TLB Hit Rate =", numTLBHits / (numAccesses) * 100)
+    
+
 
 if __name__ == "__main__":
     main()
