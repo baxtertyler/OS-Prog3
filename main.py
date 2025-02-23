@@ -49,8 +49,11 @@ def main():
     # Constant size: 256 * FRAMES
     physicalMemory = [None] * FRAMES * 256  # Each entry is 256 bytes
 
-    input = processInput("input.txt")
+    input = processInput("tests/fifo1.txt")
+
     for fullAddress in input:
+        if fullAddress == "":
+            continue
         numAccesses += 1
         current = parseAddress(int(fullAddress, 10))
         page = current[0]
@@ -71,9 +74,9 @@ def main():
 
                 pageData = getPageFromBackingStore(page)
 
-                if None in physicalMemory: # Memory is not full!
+                if None in physicalMemory: 
                     frame = physicalMemory.index(None) // 256
-                else: 
+                else: # Memory is full, must use a PRA!
                     if PRA == "FIFO":
                         evictedPage = next(iter(pageTable))
                         evictedFrame = pageTable[evictedPage][0]
@@ -100,7 +103,7 @@ def main():
                 referencedByteValue = physicalMemory[frame * 256 + offset]
 
         # Print the output for each address
-        print(f"{fullAddress}, {referencedByteValue}, {frame}, ")
+        print(f"{fullAddress}, {referencedByteValue}, {frame}, ") # TODO: referencedByteValue is not signed but should be
         print("".join([f"{x:02x}" for x in physicalMemory[frame * 256:frame * 256 + 256]])) # converts from binary to hex (got this from chat)
 
     # these might be slightly wrong
