@@ -20,6 +20,8 @@ def getPageFromBackingStore(page):
     return list(file.read(256))
 
     
+
+    
 # Main program
 
 def main():
@@ -30,6 +32,8 @@ def main():
     numTLBHits = 0
     numAccesses = 0
 
+    FRAMES = 5  # Total frames in physical memory
+    PRA = "LRU"  # Page replacement algorithm
     FRAMES = 5  # Total frames in physical memory
     PRA = "LRU"  # Page replacement algorithm
 
@@ -43,18 +47,23 @@ def main():
     # Max size: 256
     pageTable = {}
     queue = []
+    queue = []
 
     # Physical Memory
     # Constant size: 256 * FRAMES
     physicalMemory = [None] * FRAMES * 256  # Each entry is 256 bytes
 
     input = processInput("tests/lru2.txt")
+    input = processInput("tests/lru2.txt")
 
     for fullAddress in input:
         if fullAddress == "":
             continue
         fullAddress = fullAddress.strip()
+        fullAddress = fullAddress.strip()
         numAccesses += 1
+
+        current = parseAddress(int(fullAddress, 10))        
 
         current = parseAddress(int(fullAddress, 10))        
         page = current[0]
@@ -63,6 +72,9 @@ def main():
         if page in tlb:
             frame = tlb[page]
             numTLBHits += 1
+            if PRA == "LRU":
+                queue.pop(queue.index((frame, 1)))
+                queue.append((frame, 1))
             if PRA == "LRU":
                 queue.pop(queue.index((frame, 1)))
                 queue.append((frame, 1))
@@ -91,6 +103,9 @@ def main():
                         item = queue.pop(0)
                         frame = item[0]
                         pageTable[item[0]] = (None, 0)
+                        item = queue.pop(0)
+                        frame = item[0]
+                        pageTable[item[0]] = (None, 0)
                     elif PRA == "LRU":
                         pass   
                     elif PRA == "OPT":
@@ -111,10 +126,21 @@ def main():
                         # (real world frames will always be greater than TLB size)
                         # i'd like to refactor this
                         pageTable[item[0]] = (None, 0)
+                if len(tlb) > min(16, FRAMES):
+                    item = tlb.popitem(last=False)
+                    if len(tlb) > FRAMES-1: 
+                        # if an item was removed from TLB, it must be removed from page table 
+                        # ONLY IF we removed from TLB due to not enough memory instead of hitting max TLB size
+                        # (real world frames will always be greater than TLB size)
+                        # i'd like to refactor this
+                        pageTable[item[0]] = (None, 0)
 
                 # Update Page Table
                 pageTable[page] = (frame, 1)
 
+        referencedByteValue = physicalMemory[frame * 256 + offset]
+        if referencedByteValue > 127: # needed for sign
+            referencedByteValue -= 256
         referencedByteValue = physicalMemory[frame * 256 + offset]
         if referencedByteValue > 127: # needed for sign
             referencedByteValue -= 256
@@ -126,8 +152,11 @@ def main():
     print("Number of Translated Addresses =", numAccesses)
     print("Page Faults =", numPageFaults)
     print(f"Page Fault Rate = {numPageFaults / numAccesses * 100:.2f}%")
+    print(f"Page Fault Rate = {numPageFaults / numAccesses * 100:.2f}%")
     print("TLB Hits =", numTLBHits)
     print("TLB Misses =", numTLBMisses)
+    print(f"TLB Hit Rate = {numTLBHits / numAccesses * 100:.2f}%")
+    print()
     print(f"TLB Hit Rate = {numTLBHits / numAccesses * 100:.2f}%")
     print()
     
