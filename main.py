@@ -24,7 +24,6 @@ def getPageFromBackingStore(page):
 
 def main():
     # Variables we're trying to track
-    referencedByteValue = -1
     frame = -1
     numPageFaults = 0
     numTLBMisses = 0
