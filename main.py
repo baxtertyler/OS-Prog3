@@ -31,7 +31,7 @@ def main():
     numAccesses = 0
 
     FRAMES = 5  # Total frames in physical memory
-    PRA = "FIFO"  # Page replacement algorithm
+    PRA = "LRU"  # Page replacement algorithm
 
     # TLB
     # (page # -> page frame #)
@@ -48,26 +48,33 @@ def main():
     # Constant size: 256 * FRAMES
     physicalMemory = [None] * FRAMES * 256  # Each entry is 256 bytes
 
-    input = processInput("tests/fifo4.txt")
+    input = processInput("tests/lru2.txt")
 
     for fullAddress in input:
+        print(pageTable)
         if fullAddress == "":
             continue
         numAccesses += 1
         current = parseAddress(int(fullAddress, 10))
         page = current[0]
         offset = current[1]
+            
 
         if page in tlb:
             frame = tlb[page]
             referencedByteValue = physicalMemory[frame * 256 + offset]
             numTLBHits += 1
+            if PRA == "LRU":
+                queue.pop(queue.index((frame, 1)))
+                queue.append((frame, 1))
         else:
             numTLBMisses += 1
-
             if page in pageTable and pageTable[page][1] == 1:  # Page is in page table and present
                 frame = pageTable[page][0]
                 referencedByteValue = physicalMemory[frame * 256 + offset]
+                if PRA == "LRU":
+                    queue.pop(queue.index((frame, 1)))
+                    queue.append((frame, 1))
             else:
                 numPageFaults += 1
 
