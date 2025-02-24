@@ -41,7 +41,7 @@ def main():
     # Page Table
     # (page # -> [page frame #, present bit])
     # Max size: 256
-    pageTable = OrderedDict()
+    pageTable = {}
     queue = []
 
     # Physical Memory
