@@ -30,7 +30,7 @@ def main():
     numTLBHits = 0
     numAccesses = 0
 
-    FRAMES = 10  # Total frames in physical memory
+    FRAMES = 5  # Total frames in physical memory
     PRA = "FIFO"  # Page replacement algorithm
 
     # TLB
@@ -41,15 +41,16 @@ def main():
     # Page Table
     # (page # -> [page frame #, present bit])
     # Max size: 256
-    pageTable = {}
+    pageTable = OrderedDict()
 
     # Physical Memory
     # Constant size: 256 * FRAMES
     physicalMemory = [None] * FRAMES * 256  # Each entry is 256 bytes
 
-    input = processInput("tests/fifo1.txt")
+    input = processInput("tests/fifo4.txt")
 
     for fullAddress in input:
+        print(pageTable)
         if fullAddress == "":
             continue
         numAccesses += 1
@@ -76,8 +77,9 @@ def main():
                     frame = physicalMemory.index(None) // 256
                 else: # Memory is full, must use a PRA!
                     if PRA == "FIFO":
-                        # frame = frame we want to remove
-                        pass
+                        item = pageTable.popitem(last=False)
+                        frame = item[1][0]
+                        pageTable[page] = (frame, 1)
                     elif PRA == "LRU":
                         pass   
                     elif PRA == "OPT":
@@ -90,7 +92,7 @@ def main():
 
                 # Update TLB
                 tlb[page] = frame
-                if len(tlb) > 16:
+                if len(tlb) > min(16, FRAMES):
                     tlb.popitem(last=False)
 
                 # Update Page Table
