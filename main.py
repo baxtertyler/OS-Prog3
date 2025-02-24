@@ -30,8 +30,8 @@ def main():
     numTLBHits = 0
     numAccesses = 0
 
-    FRAMES = 10  # Total frames in physical memory
-    PRA = "FIFO"  # Page replacement algorithm
+    FRAMES = 3  # Total frames in physical memory
+    PRA = "LRU"  # Page replacement algorithm
 
     # TLB
     # (page # -> page frame #)
@@ -50,7 +50,7 @@ def main():
     # Constant size: 256 * FRAMES
     physicalMemory = [None] * FRAMES * 256  # Each entry is 256 bytes
 
-    input = processInput("tests/fifo1.txt")
+    input = processInput("tests/lru3.txt")
 
     for fullAddress in input:
         if fullAddress == "":
@@ -89,9 +89,11 @@ def main():
                         frame = item[0]
                         pageTable[item[0]] = (None, 0)
                     elif PRA == "LRU":
-                        item = queue.pop(0)
-                        frame = item[0]
-                        pageTable[item[0]] = (None, 0)   
+                        # print(queue)
+                        # item = queue.pop(0)
+                        # frame = item[0]
+                        # pageTable[item[0]] = (None, 0)   
+                        pass
                     elif PRA == "OPT":
                         pass
 
