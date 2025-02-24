@@ -58,8 +58,6 @@ def main():
         current = parseAddress(int(fullAddress, 10))
         page = current[0]
         offset = current[1]
-            
-
         if page in tlb:
             frame = tlb[page]
             referencedByteValue = physicalMemory[frame * 256 + offset]
@@ -102,7 +100,8 @@ def main():
                 tlb[page] = frame
                 if len(tlb) > min(16, FRAMES):
                     item = tlb.popitem(last=False)
-                    pageTable[item[0]] = (None, 0)
+                    if len(tlb) > FRAMES-1:
+                        pageTable[item[0]] = (None, 0)
 
                 # Update Page Table
                 pageTable[page] = (frame, 1)
