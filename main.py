@@ -18,6 +18,7 @@ def getPageFromBackingStore(page):
     file = open("BACKING_STORE.bin", "rb")
     file.seek(page * 256)
     return list(file.read(256))
+
     
 # Main program
 
@@ -51,16 +52,17 @@ def main():
     input = processInput("tests/lru2.txt")
 
     for fullAddress in input:
-        print(pageTable)
         if fullAddress == "":
             continue
+        fullAddress = fullAddress.strip()
         numAccesses += 1
-        current = parseAddress(int(fullAddress, 10))
+
+        current = parseAddress(int(fullAddress, 10))        
         page = current[0]
         offset = current[1]
+
         if page in tlb:
             frame = tlb[page]
-            referencedByteValue = physicalMemory[frame * 256 + offset]
             numTLBHits += 1
             if PRA == "LRU":
                 queue.pop(queue.index((frame, 1)))
@@ -69,7 +71,6 @@ def main():
             numTLBMisses += 1
             if page in pageTable and pageTable[page][1] == 1:  # Page is in page table and present
                 frame = pageTable[page][0]
-                referencedByteValue = physicalMemory[frame * 256 + offset]
                 if PRA == "LRU":
                     queue.pop(queue.index((frame, 1)))
                     queue.append((frame, 1))
@@ -103,26 +104,27 @@ def main():
                     if len(tlb) > FRAMES-1: 
                         # if an item was removed from TLB, it must be removed from page table 
                         # ONLY IF we removed from TLB due to not enough memory instead of hitting max TLB size
+                        # i'd like to refactor this
                         pageTable[item[0]] = (None, 0)
 
                 # Update Page Table
                 pageTable[page] = (frame, 1)
 
-                referencedByteValue = physicalMemory[frame * 256 + offset]
-                if referencedByteValue > 127: # needed for sign
-                    referencedByteValue -= 256
+        referencedByteValue = physicalMemory[frame * 256 + offset]
+        if referencedByteValue > 127: # needed for sign
+            referencedByteValue -= 256
 
         # Print the output for each address
         print(f"{fullAddress}, {referencedByteValue}, {frame}, ") 
         print("".join([f"{x:02x}" for x in physicalMemory[frame * 256:frame * 256 + 256]])) # converts from binary to hex (got this from chat)
 
-    # these might be slightly wrong
     print("Number of Translated Addresses =", numAccesses)
     print("Page Faults =", numPageFaults)
     print(f"Page Fault Rate = {numPageFaults / numAccesses * 100:.2f}%")
     print("TLB Hits =", numTLBHits)
     print("TLB Misses =", numTLBMisses)
-    print(f"TLB Hit Rate = {numTLBHits / numAccesses * 100:.2f}%\n")
+    print(f"TLB Hit Rate = {numTLBHits / numAccesses * 100:.2f}%")
+    print()
     
 
 
