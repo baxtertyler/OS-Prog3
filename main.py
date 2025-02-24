@@ -103,6 +103,7 @@ def main():
                     if len(tlb) > FRAMES-1: 
                         # if an item was removed from TLB, it must be removed from page table 
                         # ONLY IF we removed from TLB due to not enough memory instead of hitting max TLB size
+                        # (real world frames will always be greater than TLB size)
                         # i'd like to refactor this
                         pageTable[item[0]] = (None, 0)
 
