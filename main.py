@@ -30,7 +30,7 @@ def main():
     numTLBHits = 0
     numAccesses = 0
 
-    FRAMES = 5  # Total frames in physical memory
+    FRAMES = 8  # Total frames in physical memory
     PRA = "FIFO"  # Page replacement algorithm
 
     # TLB
@@ -47,10 +47,11 @@ def main():
     # Constant size: 256 * FRAMES
     physicalMemory = [None] * FRAMES * 256  # Each entry is 256 bytes
 
-    input = processInput("tests/fifo4.txt")
+    input = processInput("tests/fifo5.txt")
 
     for fullAddress in input:
         print(pageTable)
+        print(tlb)
         if fullAddress == "":
             continue
         numAccesses += 1
@@ -77,9 +78,7 @@ def main():
                     frame = physicalMemory.index(None) // 256
                 else: # Memory is full, must use a PRA!
                     if PRA == "FIFO":
-                        item = pageTable.popitem(last=False)
-                        frame = item[1][0]
-                        pageTable[page] = (frame, 1)
+                        pass
                     elif PRA == "LRU":
                         pass   
                     elif PRA == "OPT":
@@ -92,7 +91,7 @@ def main():
 
                 # Update TLB
                 tlb[page] = frame
-                if len(tlb) > min(16, FRAMES):
+                if len(tlb) > min(5, FRAMES):
                     tlb.popitem(last=False)
 
                 # Update Page Table
@@ -109,10 +108,10 @@ def main():
     # these might be slightly wrong
     print("Number of Translated Addresses =", numAccesses)
     print("Page Faults =", numPageFaults)
-    print("Page Fault Rate =", numPageFaults / numAccesses * 100)
+    print(f"Page Fault Rate = {numPageFaults / numAccesses * 100:.2f}%")
     print("TLB Hits =", numTLBHits)
     print("TLB Misses =", numTLBMisses)
-    print("TLB Hit Rate =", numTLBHits / (numAccesses) * 100)
+    print(f"TLB Hit Rate = {numTLBHits / numAccesses * 100:.2f}%")
     
 
 
