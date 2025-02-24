@@ -19,8 +19,6 @@ def getPageFromBackingStore(page):
     file.seek(page * 256)
     return list(file.read(256))
     
-
-
 # Main program
 
 def main():
@@ -36,14 +34,14 @@ def main():
     PRA = "FIFO"  # Page replacement algorithm
 
     # TLB
-    # [page # -> page frame #]
+    # (page # -> page frame #)
     # Max size: 16
     tlb = OrderedDict()
 
     # Page Table
-    # [page # -> (page frame #, present bit)]
+    # (page # -> [page frame #, present bit])
     # Max size: 256
-    pageTable = OrderedDict()
+    pageTable = {}
 
     # Physical Memory
     # Constant size: 256 * FRAMES
