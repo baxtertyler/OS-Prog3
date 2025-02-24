@@ -18,20 +18,20 @@ def getPageFromBackingStore(page):
     file = open("BACKING_STORE.bin", "rb")
     file.seek(page * 256)
     return list(file.read(256))
+
     
 # Main program
 
 def main():
     # Variables we're trying to track
-    referencedByteValue = -1
     frame = -1
     numPageFaults = 0
     numTLBMisses = 0
     numTLBHits = 0
     numAccesses = 0
 
-    FRAMES = 10  # Total frames in physical memory
-    PRA = "FIFO"  # Page replacement algorithm
+    FRAMES = 5  # Total frames in physical memory
+    PRA = "LRU"  # Page replacement algorithm
 
     # TLB
     # (page # -> page frame #)
@@ -42,31 +42,42 @@ def main():
     # (page # -> [page frame #, present bit])
     # Max size: 256
     pageTable = {}
+    queue = []
 
     # Physical Memory
     # Constant size: 256 * FRAMES
     physicalMemory = [None] * FRAMES * 256  # Each entry is 256 bytes
 
-    input = processInput("tests/fifo1.txt")
+    input = processInput("tests/lru2.txt")
 
     for fullAddress in input:
         if fullAddress == "":
             continue
+        fullAddress = fullAddress.strip()
         numAccesses += 1
-        current = parseAddress(int(fullAddress, 10))
+
+        current = parseAddress(int(fullAddress, 10))        
         page = current[0]
         offset = current[1]
 
         if page in tlb:
             frame = tlb[page]
-            referencedByteValue = physicalMemory[frame * 256 + offset]
             numTLBHits += 1
+            if PRA == "LRU":
+                queue.pop(queue.index((frame, 1)))
+                queue.append((frame, 1))
         else:
             numTLBMisses += 1
-
             if page in pageTable and pageTable[page][1] == 1:  # Page is in page table and present
                 frame = pageTable[page][0]
-                referencedByteValue = physicalMemory[frame * 256 + offset]
+                if PRA == "LRU":
+                    queue.pop(queue.index((frame, 1)))
+                    queue.append((frame, 1))
+                
+                tlb[page] = frame
+                if len(tlb) > 16:
+                    tlb.popitem(last=False)
+                
             else:
                 numPageFaults += 1
 
@@ -74,10 +85,12 @@ def main():
 
                 if None in physicalMemory: 
                     frame = physicalMemory.index(None) // 256
+                    queue.append((frame, 1))
                 else: # Memory is full, must use a PRA!
                     if PRA == "FIFO":
-                        # frame = frame we want to remove
-                        pass
+                        item = queue.pop(0)
+                        frame = item[0]
+                        pageTable[item[0]] = (None, 0)
                     elif PRA == "LRU":
                         pass   
                     elif PRA == "OPT":
@@ -90,27 +103,33 @@ def main():
 
                 # Update TLB
                 tlb[page] = frame
-                if len(tlb) > 16:
-                    tlb.popitem(last=False)
+                if len(tlb) > min(16, FRAMES):
+                    item = tlb.popitem(last=False)
+                    if len(tlb) > FRAMES-1: 
+                        # if an item was removed from TLB, it must be removed from page table 
+                        # ONLY IF we removed from TLB due to not enough memory instead of hitting max TLB size
+                        # (real world frames will always be greater than TLB size)
+                        # i'd like to refactor this
+                        pageTable[item[0]] = (None, 0)
 
                 # Update Page Table
                 pageTable[page] = (frame, 1)
 
-                referencedByteValue = physicalMemory[frame * 256 + offset]
-                if referencedByteValue > 127: # needed for sign
-                    referencedByteValue -= 256
+        referencedByteValue = physicalMemory[frame * 256 + offset]
+        if referencedByteValue > 127: # needed for sign
+            referencedByteValue -= 256
 
         # Print the output for each address
         print(f"{fullAddress}, {referencedByteValue}, {frame}, ") 
         print("".join([f"{x:02x}" for x in physicalMemory[frame * 256:frame * 256 + 256]])) # converts from binary to hex (got this from chat)
 
-    # these might be slightly wrong
     print("Number of Translated Addresses =", numAccesses)
     print("Page Faults =", numPageFaults)
-    print("Page Fault Rate =", numPageFaults / numAccesses * 100)
+    print(f"Page Fault Rate = {numPageFaults / numAccesses * 100:.2f}%")
     print("TLB Hits =", numTLBHits)
     print("TLB Misses =", numTLBMisses)
-    print("TLB Hit Rate =", numTLBHits / (numAccesses) * 100)
+    print(f"TLB Hit Rate = {numTLBHits / numAccesses * 100:.2f}%")
+    print()
     
 
 
