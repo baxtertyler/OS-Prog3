@@ -58,7 +58,6 @@ def main():
         offset = current[1]
 
         if page in tlb:
-            print("TLB HIT\n")
             frame = tlb[page]
             referencedByteValue = physicalMemory[frame * 256 + offset]
             numTLBHits += 1
@@ -68,7 +67,6 @@ def main():
             if page in pageTable and pageTable[page][1] == 1:  # Page is in page table and present
                 frame = pageTable[page][0]
                 referencedByteValue = physicalMemory[frame * 256 + offset]
-                print("Page Table Hit\n")
             else:
                 numPageFaults += 1
 
@@ -78,7 +76,7 @@ def main():
                     frame = physicalMemory.index(None) // 256
                 else: # Memory is full, must use a PRA!
                     if PRA == "FIFO":
-                        # Find the oldest page in memory
+                        # frame = frame we want to remove
                         pass
                     elif PRA == "LRU":
                         pass   
@@ -99,9 +97,11 @@ def main():
                 pageTable[page] = (frame, 1)
 
                 referencedByteValue = physicalMemory[frame * 256 + offset]
+                if referencedByteValue > 127: # needed for sign
+                    referencedByteValue -= 256
 
         # Print the output for each address
-        print(f"{fullAddress}, {referencedByteValue}, {frame}, ") # TODO: referencedByteValue is not signed but should be
+        print(f"{fullAddress}, {referencedByteValue}, {frame}, ") 
         print("".join([f"{x:02x}" for x in physicalMemory[frame * 256:frame * 256 + 256]])) # converts from binary to hex (got this from chat)
 
     # these might be slightly wrong
