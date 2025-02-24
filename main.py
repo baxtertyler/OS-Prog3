@@ -30,7 +30,7 @@ def main():
     numTLBHits = 0
     numAccesses = 0
 
-    FRAMES = 8  # Total frames in physical memory
+    FRAMES = 5  # Total frames in physical memory
     PRA = "FIFO"  # Page replacement algorithm
 
     # TLB
@@ -42,16 +42,15 @@ def main():
     # (page # -> [page frame #, present bit])
     # Max size: 256
     pageTable = OrderedDict()
+    queue = []
 
     # Physical Memory
     # Constant size: 256 * FRAMES
     physicalMemory = [None] * FRAMES * 256  # Each entry is 256 bytes
 
-    input = processInput("tests/fifo5.txt")
+    input = processInput("tests/fifo4.txt")
 
     for fullAddress in input:
-        print(pageTable)
-        print(tlb)
         if fullAddress == "":
             continue
         numAccesses += 1
@@ -76,9 +75,12 @@ def main():
 
                 if None in physicalMemory: 
                     frame = physicalMemory.index(None) // 256
+                    queue.append((frame, 1))
                 else: # Memory is full, must use a PRA!
                     if PRA == "FIFO":
-                        pass
+                        item = queue.pop(0)
+                        frame = item[0]
+                        pageTable[item[0]] = (None, 0)
                     elif PRA == "LRU":
                         pass   
                     elif PRA == "OPT":
@@ -91,8 +93,9 @@ def main():
 
                 # Update TLB
                 tlb[page] = frame
-                if len(tlb) > min(5, FRAMES):
-                    tlb.popitem(last=False)
+                if len(tlb) > min(16, FRAMES):
+                    item = tlb.popitem(last=False)
+                    pageTable[item[0]] = (None, 0)
 
                 # Update Page Table
                 pageTable[page] = (frame, 1)
@@ -111,7 +114,7 @@ def main():
     print(f"Page Fault Rate = {numPageFaults / numAccesses * 100:.2f}%")
     print("TLB Hits =", numTLBHits)
     print("TLB Misses =", numTLBMisses)
-    print(f"TLB Hit Rate = {numTLBHits / numAccesses * 100:.2f}%")
+    print(f"TLB Hit Rate = {numTLBHits / numAccesses * 100:.2f}%\n")
     
 
 
