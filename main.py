@@ -30,8 +30,8 @@ def main():
     numTLBHits = 0
     numAccesses = 0
 
-    FRAMES = 3  # Total frames in physical memory
-    PRA = "LRU"  # Page replacement algorithm
+    FRAMES = 5  # Total frames in physical memory
+    PRA = "OPT"  # Page replacement algorithm
 
     # TLB
     # (page # -> page frame #)
@@ -46,11 +46,17 @@ def main():
         pageTable[i] = (None, 0)
     queue = []
 
+
     # Physical Memory
     # Constant size: 256 * FRAMES
     physicalMemory = [None] * FRAMES * 256  # Each entry is 256 bytes
 
-    input = processInput("tests/lru3.txt")
+    input = processInput("tests/opt2.txt")
+
+    # Create oir remaining list for the OPT algo
+    remaining = input.copy()
+    remaining.pop(-1)
+    remaining = [parseAddress(int(fullAddress.strip(), 10))[0] for fullAddress in remaining]
 
     for fullAddress in input:
         if fullAddress == "":
@@ -58,9 +64,13 @@ def main():
         fullAddress = fullAddress.strip()
         numAccesses += 1
 
+        # Remove from our remaining list
+        remaining.pop(0)
+      
         current = parseAddress(int(fullAddress, 10))        
         page = current[0]
         offset = current[1]
+        
 
         if page in tlb:
             frame = tlb[page]
@@ -75,6 +85,11 @@ def main():
                 if PRA == "LRU":
                     queue.pop(queue.index((frame, 1)))
                     queue.append((frame, 1))
+
+                tlb[page] = frame
+                if len(tlb) > 16:
+                    tlb.popitem(last=False) 
+
             else:
                 numPageFaults += 1
 
@@ -89,13 +104,28 @@ def main():
                         frame = item[0]
                         pageTable[item[0]] = (None, 0)
                     elif PRA == "LRU":
-                        # print(queue)
-                        # item = queue.pop(0)
-                        # frame = item[0]
-                        # pageTable[item[0]] = (None, 0)   
-                        pass
+                        item = queue.pop(0)
+                        frame = item[0]
+                        pageTable[item[0]] = (None, 0)   
                     elif PRA == "OPT":
-                        pass
+                        # remove the frame that will not be used for the longest time
+                        # we know the future from our remaining list
+
+                        # find the frame that either will not be used or will not be used for the longest time
+                        max_future = -1
+                        frame = -1
+
+                        for page, frame_content in pageTable.items():
+                            if frame_content[1] == 1:
+                                if page in remaining:  # page is in remaining list
+                                    future_index = remaining.index(page)
+                                    if future_index > max_future:
+                                        max_future = future_index
+                                        frame = frame_content[0]
+                                else: # page is not going to be used again, we can replace it
+                                    frame = frame_content[0]
+                                    break
+
 
                 # Load the page into physical memory
                 startAddress = frame * 256
@@ -116,6 +146,9 @@ def main():
                 # Update Page Table
                 pageTable[page] = (frame, 1)
 
+                # Add to queue
+                queue.append((frame, 1))
+
         referencedByteValue = physicalMemory[frame * 256 + offset]
         if referencedByteValue > 127: # needed for sign
             referencedByteValue -= 256
@@ -123,6 +156,9 @@ def main():
         # Print the output for each address
         print(f"{fullAddress}, {referencedByteValue}, {frame}, ") 
         print("".join([f"{x:02x}" for x in physicalMemory[frame * 256:frame * 256 + 256]])) # converts from binary to hex (got this from chat)
+
+        
+       
 
     print("Number of Translated Addresses =", numAccesses)
     print("Page Faults =", numPageFaults)
